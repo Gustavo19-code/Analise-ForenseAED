@@ -5,6 +5,8 @@ import java.util.*;
 
 public class MinhaAnaliseForense implements AnaliseForenseAvancada {
 
+
+
     @Override
     public Set<String> encontrarSessoesInvalidas(String arquivo) throws IOException {
         Set<String> sessoesInvalidas = new HashSet<>();
@@ -53,7 +55,27 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
         }
         return sessoesInvalidas;
     }
+
+    @Override
+    public List<String> reconstruirLinhaTempo(String s, String s1) throws IOException {
+        return List.of();
     }
+
+    @Override
+    public List<Alerta> priorizarAlertas(String s, int i) throws IOException {
+        return List.of();
+    }
+
+    @Override
+    public Map<Long, Long> encontrarPicosTransferencia(String s) throws IOException {
+        return Map.of();
+    }
+
+    @Override
+    public Optional<List<String>> rastrearContaminacao(String s, String s1, String s2) throws IOException {
+        return Optional.empty();
+    }
+}
 
     @Override
     public List<String> reconstruirLinhaTempo(String arquivo, String sessionId) throws IOException {
@@ -79,10 +101,14 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
                 String[] dados=linha.split(",");
                 //De acordo com a ordem de entrada na classe aviso: 1.TIMESTAMP,2.ACTION_TYPE,3.SEVERITY_LEVEL.
                 long TIMESTAMP=Long.parseLong(dados[0].trim());
+                String Id= dados[1].trim();
+                String sessao=dados[2].trim();
                 String acao=dados[3].trim();
+                String alvo= dados[4].trim();
                 int severidade= Integer.parseInt(dados[5].trim());
+                Long transferencia= Long.parseLong(dados[6].trim());
 
-                Alerta novoAlerta= new Alerta(TIMESTAMP, acao, severidade);
+                Alerta novoAlerta= new Alerta(TIMESTAMP,Id,sessao,acao,alvo,severidade,transferencia);
 
                 alertasSeveridade.offer(novoAlerta);
 
@@ -103,14 +129,69 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
 
     }
 
+
+//Classe auxiliar para o desafio 4.
+class Alertas{
+    Long timestamp;
+    long transferidos;
+    public Alertas(long T, long t){
+        this.timestamp=T;
+        this.transferidos=t;
+    }
+
+}
     @Override
     public Map<Long, Long> encontrarPicosTransferencia(String arquivo) throws IOException {
+    List<Alertas> Evento= new ArrayList<>();
 
+    try(BufferedReader leitor=new BufferedReader(new FileReader(arquivo))){
+        String linha= leitor.readLine();
+
+        while (leitor!=null){
+            String[]conjuntos= linha.split(";");
+             long timestamp=Long.parseLong(conjuntos[0]);
+             long transferidos= Long.parseLong(conjuntos[6]);
+             if(transferidos>0){
+                 Evento.add(new Alertas(timestamp,transferidos));
+             }
+
+        }
 
     }
+
+    Stack<Alertas> stack= new Stack<>();
+    Map<Long,Long>resultados= new HashMap<>();
+
+    for (int i=Evento.size()-1;i>=0;i--){
+        Alertas a= Evento.get(i);
+
+        //desempilha os alertas enquanto o topo for menor ou igual a quantidade de bytes trasferidos.
+        while(!stack.isEmpty()&&stack.peek().transferidos<=a.transferidos){
+            stack.pop();
+        }
+
+        if(!stack.isEmpty()){
+            resultados.put(a.timestamp, stack.peek().timestamp);
+        }
+
+        stack.push(a);
+    }
+
+
+      return resultados;
+    }
+
+
+
+
 
     @Override
     public Optional<List<String>> rastrearContaminacao(String arquivo, String origem, String destino) throws IOException {
         // Implementar usando BFS em grafo
     }
+
+
+
+
+
 }
