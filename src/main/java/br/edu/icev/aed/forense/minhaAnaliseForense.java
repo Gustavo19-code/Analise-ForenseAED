@@ -62,12 +62,51 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
 
     @Override
     public List<Alerta> priorizarAlertas(String arquivo, int n) throws IOException {
-        // Implementar usando PriorityQueue<Alerta>
+        if(n<=0){
+            return Collections.emptyList();
+        }
+
+        PriorityQueue<Alerta> alertasSeveridade=new PriorityQueue<>(
+                (a1,a2)->Integer.compare(a2.getSeverityLevel(), a1.getSeverityLevel())
+        );
+
+        try(BufferedReader leitor= new BufferedReader(new FileReader(arquivo))){
+            leitor.readLine();
+            String linha;
+            linha=leitor.readLine();
+
+            while(linha!=null){
+                String[] dados=linha.split(",");
+                //De acordo com a ordem de entrada na classe aviso: 1.TIMESTAMP,2.ACTION_TYPE,3.SEVERITY_LEVEL.
+                long TIMESTAMP=Long.parseLong(dados[0].trim());
+                String acao=dados[3].trim();
+                int severidade= Integer.parseInt(dados[5].trim());
+
+                Alerta novoAlerta= new Alerta(TIMESTAMP, acao, severidade);
+
+                alertasSeveridade.offer(novoAlerta);
+
+            }
+
+        }
+
+        List<Alerta>resultados=new ArrayList<>();
+        int contador= 0;
+
+        while(!alertasSeveridade.isEmpty()&& contador<n){
+            resultados.add(alertasSeveridade.poll());
+            contador++;
+        }
+
+        return resultados;
+
+
     }
 
     @Override
     public Map<Long, Long> encontrarPicosTransferencia(String arquivo) throws IOException {
-        // Implementar usando Stack (Next Greater Element)
+
+
     }
 
     @Override
