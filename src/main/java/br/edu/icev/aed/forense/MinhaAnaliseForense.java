@@ -55,6 +55,9 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
         }
         return sessoesInvalidas;
     }
+
+
+
     //Desafio 2.
     @Override
     public List<String> reconstruirLinhaTempo(String s, String s1) throws IOException {
@@ -164,6 +167,8 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
 class Alertas{
     Long timestamp;
     long transferidos;
+
+
     public Alertas(long T, long t){
         this.timestamp=T;
         this.transferidos=t;
