@@ -62,7 +62,11 @@ public class SimuladorValidador {
         System.out.println("Resultado: " + resultado);
     }
 
-
+        private static void testDesafio2(MinhaAnaliseForense impl) throws Exception {
+        System.out.println("Desafio 3 - Reconstruir linha do tempo.");
+        Set<String> resultado = impl.encontrarSessoesInvalidas(ARQUIVO_TESTE_CSV);
+        System.out.println("Resultado: " + resultado);
+    }
 
     private static void testDesafio3(AnaliseForenseAvancada impl) throws Exception {
         int n = 3;

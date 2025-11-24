@@ -1,12 +1,25 @@
 package br.edu.icev.aed.forense;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.Set;
+import java.util.Stack;
 
 public class MinhaAnaliseForense implements AnaliseForenseAvancada {
 
-
-    //Desafio 1.
     @Override
     public Set<String> encontrarSessoesInvalidas(String arquivo) throws IOException {
         Set<String> sessoesInvalidas = new HashSet<>();
@@ -15,11 +28,10 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
 
         try (BufferedReader br = new BufferedReader(new FileReader(arquivo))) {
             String linha;
-            br.readLine(); // Pular cabeçalho
+            br.readLine();
 
             while ((linha = br.readLine()) != null) {
                 String[] partes = linha.split(",");
-                // Validação básica
                 if (partes.length < 4) continue;
 
                 String userId = partes[1];
@@ -56,12 +68,32 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
         return sessoesInvalidas;
     }
 
-
-
-    //Desafio 2.
+    // --- Desafio 2: Reconstruir Linha do Tempo ---
     @Override
-    public List<String> reconstruirLinhaTempo(String s, String s1) throws IOException {
-        return List.of();
+    public List<String> reconstruirLinhaDoTempo(String caminhoArquivoCsv, String sessionId) throws IOException {
+        Queue<String> filaDeAcoes = new LinkedList<>();
+
+        try (BufferedReader br = new BufferedReader(new FileReader(caminhoArquivoCsv))) {
+            String linha;
+            boolean isHeader = true;
+
+            while ((linha = br.readLine()) != null) {
+                if (isHeader) { isHeader = false; continue; }
+
+                LogEntry log = new LogEntry(linha);
+
+                if (log.getSessionId().equals(sessionId)) {
+                    filaDeAcoes.add(log.getActionType());
+                }
+            }
+        }
+
+        List<String> resultado = new ArrayList<>();
+        while (!filaDeAcoes.isEmpty()) {
+            resultado.add(filaDeAcoes.poll());
+        }
+
+        return resultado;
     }
 
 
