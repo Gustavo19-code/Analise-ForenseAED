@@ -6,7 +6,7 @@ import java.util.*;
 public class MinhaAnaliseForense implements AnaliseForenseAvancada {
 
 
-
+    //Desafio 1.
     @Override
     public Set<String> encontrarSessoesInvalidas(String arquivo) throws IOException {
         Set<String> sessoesInvalidas = new HashSet<>();
@@ -55,36 +55,17 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
         }
         return sessoesInvalidas;
     }
-
+    //Desafio 2.
     @Override
     public List<String> reconstruirLinhaTempo(String s, String s1) throws IOException {
         return List.of();
     }
 
-    @Override
-    public List<Alerta> priorizarAlertas(String s, int i) throws IOException {
-        return List.of();
-    }
 
+    //Desafio 3.
     @Override
-    public Map<Long, Long> encontrarPicosTransferencia(String s) throws IOException {
-        return Map.of();
-    }
-
-    @Override
-    public Optional<List<String>> rastrearContaminacao(String s, String s1, String s2) throws IOException {
-        return Optional.empty();
-    }
-}
-
-    @Override
-    public List<String> reconstruirLinhaTempo(String arquivo, String sessionId) throws IOException {
-        // Implementar usando Queue<String>
-    }
-
-    @Override
-    public List<Alerta> priorizarAlertas(String arquivo, int n) throws IOException {
-        if(n<=0){
+    public List<Alerta> priorizarAlertas(String arquivo, int i) throws IOException {
+        if(i<=0){
             return Collections.emptyList();
         }
 
@@ -119,7 +100,7 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
         List<Alerta>resultados=new ArrayList<>();
         int contador= 0;
 
-        while(!alertasSeveridade.isEmpty()&& contador<n){
+        while(!alertasSeveridade.isEmpty()&& contador<i){
             resultados.add(alertasSeveridade.poll());
             contador++;
         }
@@ -129,8 +110,57 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
 
     }
 
+    //Desafio 4.
+    @Override
+    public Map<Long, Long> encontrarPicosTransferencia(String arquivo) throws IOException {
+        List<Alertas> Evento= new ArrayList<>();
 
-//Classe auxiliar para o desafio 4.
+        try(BufferedReader leitor=new BufferedReader(new FileReader(arquivo))){
+            String linha= leitor.readLine();
+
+            while (leitor!=null){
+                String[]conjuntos= linha.split(";");
+                long timestamp=Long.parseLong(conjuntos[0]);
+                long transferidos= Long.parseLong(conjuntos[6]);
+                if(transferidos>0){
+                    Evento.add(new Alertas(timestamp,transferidos));
+                }
+
+            }
+
+        }
+
+        Stack<Alertas> stack= new Stack<>();
+        Map<Long,Long>resultados= new HashMap<>();
+
+        for (int i=Evento.size()-1;i>=0;i--){
+            Alertas a= Evento.get(i);
+
+            //desempilha os alertas enquanto o topo for menor ou igual a quantidade de bytes trasferidos.
+            while(!stack.isEmpty()&&stack.peek().transferidos<=a.transferidos){
+                stack.pop();
+            }
+
+            if(!stack.isEmpty()){
+                resultados.put(a.timestamp, stack.peek().timestamp);
+            }
+
+            stack.push(a);
+        }
+
+
+        return resultados;
+    }
+
+
+    //Desafio 5.
+    @Override
+    public Optional<List<String>> rastrearContaminacao(String s, String s1, String s2) throws IOException {
+        return Optional.empty();
+    }
+
+
+    //Classe auxiliar para o desafio 4.
 class Alertas{
     Long timestamp;
     long transferidos;
@@ -140,56 +170,12 @@ class Alertas{
     }
 
 }
-    @Override
-    public Map<Long, Long> encontrarPicosTransferencia(String arquivo) throws IOException {
-    List<Alertas> Evento= new ArrayList<>();
-
-    try(BufferedReader leitor=new BufferedReader(new FileReader(arquivo))){
-        String linha= leitor.readLine();
-
-        while (leitor!=null){
-            String[]conjuntos= linha.split(";");
-             long timestamp=Long.parseLong(conjuntos[0]);
-             long transferidos= Long.parseLong(conjuntos[6]);
-             if(transferidos>0){
-                 Evento.add(new Alertas(timestamp,transferidos));
-             }
-
-        }
-
-    }
-
-    Stack<Alertas> stack= new Stack<>();
-    Map<Long,Long>resultados= new HashMap<>();
-
-    for (int i=Evento.size()-1;i>=0;i--){
-        Alertas a= Evento.get(i);
-
-        //desempilha os alertas enquanto o topo for menor ou igual a quantidade de bytes trasferidos.
-        while(!stack.isEmpty()&&stack.peek().transferidos<=a.transferidos){
-            stack.pop();
-        }
-
-        if(!stack.isEmpty()){
-            resultados.put(a.timestamp, stack.peek().timestamp);
-        }
-
-        stack.push(a);
-    }
-
-
-      return resultados;
-    }
 
 
 
 
 
-    @Override
-    public Optional<List<String>> rastrearContaminacao(String arquivo, String origem, String destino) throws IOException {
 
-
-    }
 
 
 
