@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -195,9 +196,99 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
     }
 
 
-    //Desafio 5.
+    // --- DESAFIO 5: RASTREAR CONTAMINAÇÃO (Grafo + BFS) ---
     @Override
-    public Optional<List<String>> rastrearContaminacao(String s, String s1, String s2) throws IOException {
+    public Optional<List<String>> rastrearContaminacao(String caminhoArquivoCsv, String recursoInicial, String recursoAlvo) throws IOException {
+        
+        // 1. Caso base: Se início for igual ao alvo, retorna lista unitária (se existir no log)
+        // O documento pede para verificar se o recurso existe, mas para simplificar a BFS,
+        // vamos assumir que se ele foi passado e é igual, o caminho é ele mesmo.
+        if (recursoInicial.equals(recursoAlvo)) {
+            return Optional.of(Collections.singletonList(recursoInicial));
+        }
+
+        // 2. Construção do Grafo
+        // Mapa: SessionID -> Lista de Ações (para reconstruir a ordem temporal de cada sessão)
+        Map<String, List<LogEntry>> sessoes = new HashMap<>();
+        
+        // Leitura do arquivo para agrupar ações por sessão
+        try (BufferedReader br = new BufferedReader(new FileReader(caminhoArquivoCsv))) {
+            String linha;
+            boolean header = true;
+            while ((linha = br.readLine()) != null) {
+                if (header) { header = false; continue; }
+                LogEntry log = new LogEntry(linha);
+                
+                sessoes.putIfAbsent(log.getSessionId(), new ArrayList<>());
+                sessoes.get(log.getSessionId()).add(log);
+            }
+        }
+
+        // Lista de Adjacência: Recurso -> Conjunto de Recursos acessados imediatamente após
+        // Usamos Set para evitar arestas duplicadas
+        Map<String, Set<String>> grafo = new HashMap<>();
+
+        for (List<LogEntry> acoesDaSessao : sessoes.values()) {
+            // Garante ordenação por timestamp (embora o log geralmente já venha ordenado)
+            acoesDaSessao.sort(Comparator.comparingLong(LogEntry::getTimestamp));
+
+            for (int i = 0; i < acoesDaSessao.size() - 1; i++) {
+                String origem = acoesDaSessao.get(i).getTargetResource();
+                String destino = acoesDaSessao.get(i+1).getTargetResource();
+
+                // Ignora se o recurso for o mesmo (auto-ciclo irrelevante para caminho mínimo)
+                if (!origem.equals(destino)) {
+                    grafo.putIfAbsent(origem, new HashSet<>());
+                    grafo.get(origem).add(destino);
+                }
+            }
+        }
+
+        // 3. Execução do BFS (Busca em Largura)
+        Queue<String> fila = new LinkedList<>();
+        Map<String, String> predecessores = new HashMap<>(); // Para reconstruir o caminho (Filho -> Pai)
+        Set<String> visitados = new HashSet<>();
+
+        fila.add(recursoInicial);
+        visitados.add(recursoInicial);
+        boolean encontrou = false;
+
+        while (!fila.isEmpty()) {
+            String atual = fila.poll();
+
+            if (atual.equals(recursoAlvo)) {
+                encontrou = true;
+                break;
+            }
+
+            // Se o nó atual tem vizinhos
+            if (grafo.containsKey(atual)) {
+                for (String vizinho : grafo.get(atual)) {
+                    if (!visitados.contains(vizinho)) {
+                        visitados.add(vizinho);
+                        predecessores.put(vizinho, atual); // Mapeia de onde viemos
+                        fila.add(vizinho);
+                    }
+                }
+            }
+        }
+
+        // 4. Reconstrução do Caminho
+        if (encontrou) {
+            List<String> caminho = new ArrayList<>();
+            String passo = recursoAlvo;
+            
+            // Backtracking do alvo até o início usando o mapa de predecessores
+            while (passo != null) {
+                caminho.add(passo);
+                passo = predecessores.get(passo);
+            }
+            
+            // O caminho foi montado de trás para frente, então invertemos
+            Collections.reverse(caminho);
+            return Optional.of(caminho);
+        }
+
         return Optional.empty();
     }
 
