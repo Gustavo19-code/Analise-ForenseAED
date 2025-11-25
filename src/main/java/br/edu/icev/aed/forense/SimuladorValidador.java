@@ -32,12 +32,12 @@ public class SimuladorValidador {
             Constructor<?> constructor = clazz.getDeclaredConstructor();
 
 
-            AnaliseForenseAvancada analyzer = (AnaliseForenseAvancada) constructor.newInstance();
+            MinhaAnaliseForense analyzer = (MinhaAnaliseForense) constructor.newInstance();
             System.out.println("   ✓ Classe instanciada com sucesso!");
 
 
             testDesafio1(analyzer);
-            //testDesafio2(analyzer);
+            testDesafio2(analyzer);
             testDesafio3(analyzer);
             testDesafio4(analyzer);
             //testDesafio5(analyzer);

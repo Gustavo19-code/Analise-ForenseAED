@@ -67,23 +67,27 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
         }
         return sessoesInvalidas;
     }
-
     // --- Desafio 2: Reconstruir Linha do Tempo ---
     @Override
-    public List<String> reconstruirLinhaDoTempo(String caminhoArquivoCsv, String sessionId) throws IOException {
+    public List<String> reconstruirLinhaTempo(String arquivo, String s1) throws IOException {
         Queue<String> filaDeAcoes = new LinkedList<>();
 
-        try (BufferedReader br = new BufferedReader(new FileReader(caminhoArquivoCsv))) {
-            String linha;
+        try (BufferedReader br = new BufferedReader(new FileReader(arquivo))) {
+            String linha=br.readLine();
             boolean isHeader = true;
 
-            while ((linha = br.readLine()) != null) {
-                if (isHeader) { isHeader = false; continue; }
+            while (linha!=null){
 
-                LogEntry log = new LogEntry(linha);
+                String[] sessao= linha.split(",");
 
-                if (log.getSessionId().equals(sessionId)) {
-                    filaDeAcoes.add(log.getActionType());
+                if (sessao.length<4) continue;
+
+                String sessionID=sessao[2];
+                String acao=sessao[3];
+
+
+                if (sessionID.equals(s1)) {
+                    filaDeAcoes.add(acao);
                 }
             }
         }
@@ -95,6 +99,9 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
 
         return resultado;
     }
+
+
+
 
 
     //Desafio 3.
@@ -114,18 +121,18 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
             linha=leitor.readLine();
 
             while(linha!=null){
-                String[] dados=linha.split(",");
-                //De acordo com a ordem de entrada na classe aviso: 1.TIMESTAMP,2.ACTION_TYPE,3.SEVERITY_LEVEL.
-                long TIMESTAMP=Long.parseLong(dados[0].trim());
-                String Id= dados[1].trim();
-                String sessao=dados[2].trim();
-                String acao=dados[3].trim();
-                String alvo= dados[4].trim();
-                int severidade= Integer.parseInt(dados[5].trim());
-                Long transferencia= Long.parseLong(dados[6].trim());
+                String[] dados = linha.split(",");
 
-                Alerta novoAlerta= new Alerta(TIMESTAMP,Id,sessao,acao,alvo,severidade,transferencia);
+                if(dados.length<7)continue;
+                long TIMESTAMP = Long.parseLong(dados[0].trim());
+                String userId = dados[1].trim();
+                String sessionId = dados[2].trim();
+                String acao = dados[3].trim();
+                String alvo = dados[4].trim();
+                int severidade = Integer.parseInt(dados[5].trim());
+                long transferidos = Long.parseLong(dados[6].trim());
 
+                Alerta novoAlerta = new Alerta(TIMESTAMP,userId, sessionId ,acao,alvo,severidade,transferidos);
                 alertasSeveridade.offer(novoAlerta);
 
             }
@@ -208,8 +215,43 @@ class Alertas{
 
 }
 
+//classe auxiliar desafio 2.
+class Logs{
+        String sessionId;
+        String acao;
+
+        public Logs(String Id,String acao){
+            this.sessionId=Id;
+            this.acao=acao;
+        }
+
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    public String getAcao() {
+        return acao;
+    }
+}
+
+class session{
+        long TIMESTAMP;
+        String acao;
+       int severidade;
+
+        public session(long tm,String ac,int sv) {
+            this.TIMESTAMP=tm;
+            this.acao=ac;
+            this.severidade=sv;
+
+        }
 
 
+
+    public int getSeveridade() {
+        return severidade;
+    }
+}
 
 
 
