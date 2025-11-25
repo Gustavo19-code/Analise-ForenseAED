@@ -63,7 +63,7 @@ public class SimuladorValidador {
     }
 
         private static void testDesafio2(MinhaAnaliseForense impl) throws Exception {
-        System.out.println("Desafio 3 - Reconstruir linha do tempo.");
+        System.out.println("Desafio 2 - Encontrar sessoes validas.");
         Set<String> resultado = impl.encontrarSessoesInvalidas(ARQUIVO_TESTE_CSV);
         System.out.println("Resultado: " + resultado);
     }

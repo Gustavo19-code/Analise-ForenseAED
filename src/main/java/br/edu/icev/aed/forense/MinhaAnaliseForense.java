@@ -68,38 +68,34 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
         }
         return sessoesInvalidas;
     }
+
+
     // --- Desafio 2: Reconstruir Linha do Tempo ---
     @Override
-    public List<String> reconstruirLinhaTempo(String arquivo, String s1) throws IOException {
-        Queue<String> filaDeAcoes = new LinkedList<>();
+    public List<String> reconstruirLinhaTempo(String caminhoArquivoCsv, String sessionIdAlvo) throws IOException {
+        // Usa Fila (Queue) conforme pedido no desafio
+        Queue<String> filaAcoes = new LinkedList<>();
 
-        try (BufferedReader br = new BufferedReader(new FileReader(arquivo))) {
-            String linha=br.readLine();
-            boolean isHeader = true;
+        try (BufferedReader br = new BufferedReader(new FileReader(caminhoArquivoCsv))) {
+            String linha;
 
-            while (linha!=null){
+            while ((linha = br.readLine()) != null) {
+                String[] partes = linha.split(",");
+                if (partes.length < 4) continue;
 
-                String[] sessao= linha.split(",");
+                String sessionIdAtual = partes[2];
+                String action = partes[3];
 
-                if (sessao.length<4) continue;
-
-                String sessionID=sessao[2];
-                String acao=sessao[3];
-
-
-                if (sessionID.equals(s1)) {
-                    filaDeAcoes.add(acao);
+                // Filtra apenas a sessão alvo
+                if (sessionIdAtual.equals(sessionIdAlvo)) {
+                    filaAcoes.add(action);
                 }
             }
         }
-
-        List<String> resultado = new ArrayList<>();
-        while (!filaDeAcoes.isEmpty()) {
-            resultado.add(filaDeAcoes.poll());
-        }
-
-        return resultado;
+        // Retorna a lista na ordem cronológica (FIFO)
+        return new ArrayList<>(filaAcoes);
     }
+
 
 
 
@@ -307,7 +303,7 @@ class Alertas{
 }
 
 //classe auxiliar desafio 2.
-class Logs{
+static class Logs{
         String sessionId;
         String acao;
 
@@ -325,7 +321,7 @@ class Logs{
     }
 }
 
-class session{
+ static class session{
         long TIMESTAMP;
         String acao;
        int severidade;
