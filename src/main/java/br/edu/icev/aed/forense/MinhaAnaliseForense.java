@@ -103,50 +103,51 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
 
     //Desafio 3.
     @Override
-    public List<Alerta> priorizarAlertas(String arquivo, int i) throws IOException {
-        if(i<=0){
+    public List<Alerta> priorizarAlertas(String arquivo, int n) throws IOException {
+        if (n <= 0) {
             return Collections.emptyList();
         }
 
-        PriorityQueue<Alerta> alertasSeveridade=new PriorityQueue<>(
-                (a1,a2)->Integer.compare(a2.getSeverityLevel(), a1.getSeverityLevel())
+
+        PriorityQueue<Alerta> alertasSeveridade = new PriorityQueue<>(
+
+                (a1, a2) -> Integer.compare(a2.getSeverityLevel(), a1.getSeverityLevel())
         );
 
-        try(BufferedReader leitor= new BufferedReader(new FileReader(arquivo))){
+        try (BufferedReader leitor = new BufferedReader(new FileReader(arquivo))) {
             leitor.readLine();
+
             String linha;
-            linha=leitor.readLine();
-
-            while(linha!=null){
+            while ((linha = leitor.readLine()) != null) {
                 String[] dados = linha.split(",");
+                if (dados.length < 7) continue;
 
-                if(dados.length<7)continue;
-                long TIMESTAMP = Long.parseLong(dados[0].trim());
-                String userId = dados[1].trim();
-                String sessionId = dados[2].trim();
-                String acao = dados[3].trim();
-                String alvo = dados[4].trim();
-                int severidade = Integer.parseInt(dados[5].trim());
-                long transferidos = Long.parseLong(dados[6].trim());
+                try {
+                    // Campos relevantes: TIMESTAMP(0), ACTION_TYPE(3), SEVERITY_LEVEL(5)
+                    long TIMESTAMP = Long.parseLong(dados[0].trim());
+                    String acao = dados[3].trim();
+                    int severidade = Integer.parseInt(dados[5].trim());
 
-                Alerta novoAlerta = new Alerta(TIMESTAMP,userId, sessionId ,acao,alvo,severidade,transferidos);
-                alertasSeveridade.offer(novoAlerta);
 
+                    Alerta novoAlerta = new Alerta(TIMESTAMP, acao, severidade);
+                    alertasSeveridade.offer(novoAlerta);
+
+                } catch (NumberFormatException ignored) {
+
+                }
             }
-
         }
 
-        List<Alerta>resultados=new ArrayList<>();
-        int contador= 0;
+        List<Alerta> resultados = new ArrayList<>();
+        int contador = 0;
 
-        while(!alertasSeveridade.isEmpty()&& contador<i){
+        // Extrai os 'n' alertas mais severos (poll()) [cite: 184]
+        while (!alertasSeveridade.isEmpty() && contador < n) {
             resultados.add(alertasSeveridade.poll());
             contador++;
         }
 
         return resultados;
-
-
     }
 
     //Desafio 4.
@@ -175,7 +176,7 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
         for (int i=Evento.size()-1;i>=0;i--){
             Alertas a= Evento.get(i);
 
-            //desempilha os alertas enquanto o topo for menor ou igual a quantidade de bytes trasferidos.
+
             while(!stack.isEmpty()&&stack.peek().transferidos<=a.transferidos){
                 stack.pop();
             }
@@ -192,69 +193,68 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
     }
 
 
-    // --- DESAFIO 5: RASTREAR CONTAMINAÇÃO (Grafo + BFS) ---
+    // Desafio 5.
     @Override
     public Optional<List<String>> rastrearContaminacao(String caminhoArquivoCsv, String recursoInicial, String recursoAlvo) throws IOException {
-        
-        // 1. Caso base: Se início for igual ao alvo, retorna lista unitária (se existir no log)
-        // O documento pede para verificar se o recurso existe, mas para simplificar a BFS,
-        // vamos assumir que se ele foi passado e é igual, o caminho é ele mesmo.
+
+
         if (recursoInicial.equals(recursoAlvo)) {
             return Optional.of(Collections.singletonList(recursoInicial));
         }
 
-        // 2. Construção do Grafo
-        // Mapa: SessionID -> Lista de Ações (para reconstruir a ordem temporal de cada sessão)
+
         Map<String, List<LogEntry>> sessoes = new HashMap<>();
-        
-        // Leitura do arquivo para agrupar ações por sessão
+
         try (BufferedReader br = new BufferedReader(new FileReader(caminhoArquivoCsv))) {
+            br.readLine(); // Pula o cabeçalho
             String linha;
-            boolean header = true;
             while ((linha = br.readLine()) != null) {
-                if (header) { header = false; continue; }
-                LogEntry log = new LogEntry(linha);
-                
-                sessoes.putIfAbsent(log.getSessionId(), new ArrayList<>());
-                sessoes.get(log.getSessionId()).add(log);
-            }
-        }
-
-        // Lista de Adjacência: Recurso -> Conjunto de Recursos acessados imediatamente após
-        // Usamos Set para evitar arestas duplicadas
-        Map<String, Set<String>> grafo = new HashMap<>();
-
-        for (List<LogEntry> acoesDaSessao : sessoes.values()) {
-            // Garante ordenação por timestamp (embora o log geralmente já venha ordenado)
-            acoesDaSessao.sort(Comparator.comparingLong(LogEntry::getTimestamp));
-
-            for (int i = 0; i < acoesDaSessao.size() - 1; i++) {
-                String origem = acoesDaSessao.get(i).getTargetResource();
-                String destino = acoesDaSessao.get(i+1).getTargetResource();
-
-                // Ignora se o recurso for o mesmo (auto-ciclo irrelevante para caminho mínimo)
-                if (!origem.equals(destino)) {
-                    grafo.putIfAbsent(origem, new HashSet<>());
-                    grafo.get(origem).add(destino);
+                try {
+                    LogEntry log = new LogEntry(linha);
+                    sessoes.computeIfAbsent(log.getSessionId(), k -> new ArrayList<>()).add(log);
+                } catch (Exception ignored) {
+                    // Ignora linhas mal formatadas
                 }
             }
         }
 
-        // 3. Execução do BFS (Busca em Largura)
+
+        Map<String, Set<String>> grafo = new HashMap<>();
+
+        for (List<LogEntry> acoesDaSessao : sessoes.values()) {
+
+            acoesDaSessao.sort(Comparator.comparingLong(LogEntry::getTimestamp));
+
+
+            for (int i = 0; i < acoesDaSessao.size() - 1; i++) {
+                String origem = acoesDaSessao.get(i).getTargetResource();
+                String destino = acoesDaSessao.get(i + 1).getTargetResource();
+
+                if (!origem.equals(destino)) {
+                    grafo.computeIfAbsent(origem, k -> new HashSet<>()).add(destino);
+                }
+            }
+        }
+
+
         Queue<String> fila = new LinkedList<>();
-        Map<String, String> predecessores = new HashMap<>(); // Para reconstruir o caminho (Filho -> Pai)
+        Map<String, String> predecessores = new HashMap<>();
         Set<String> visitados = new HashSet<>();
+
+        if (!grafo.containsKey(recursoInicial) && !recursoInicial.equals(recursoAlvo)) {
+
+            return Optional.empty();
+        }
 
         fila.add(recursoInicial);
         visitados.add(recursoInicial);
-        boolean encontrou = false;
 
         while (!fila.isEmpty()) {
             String atual = fila.poll();
 
             if (atual.equals(recursoAlvo)) {
-                encontrou = true;
-                break;
+
+                return Optional.of(reconstruirCaminho(recursoInicial, recursoAlvo, predecessores));
             }
 
             // Se o nó atual tem vizinhos
@@ -262,32 +262,32 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
                 for (String vizinho : grafo.get(atual)) {
                     if (!visitados.contains(vizinho)) {
                         visitados.add(vizinho);
-                        predecessores.put(vizinho, atual); // Mapeia de onde viemos
+                        predecessores.put(vizinho, atual); // Mapeia de onde viemos [cite: 251]
                         fila.add(vizinho);
                     }
                 }
             }
         }
 
-        // 4. Reconstrução do Caminho
-        if (encontrou) {
-            List<String> caminho = new ArrayList<>();
-            String passo = recursoAlvo;
-            
-            // Backtracking do alvo até o início usando o mapa de predecessores
-            while (passo != null) {
-                caminho.add(passo);
-                passo = predecessores.get(passo);
-            }
-            
-            // O caminho foi montado de trás para frente, então invertemos
-            Collections.reverse(caminho);
-            return Optional.of(caminho);
-        }
 
         return Optional.empty();
     }
 
+
+    private List<String> reconstruirCaminho(String recursoInicial, String recursoAlvo, Map<String, String> predecessores) {
+        List<String> caminho = new ArrayList<>();
+        String passo = recursoAlvo;
+
+
+        while (passo != null) {
+            caminho.add(passo);
+            passo = predecessores.get(passo);
+        }
+
+
+        Collections.reverse(caminho);
+        return caminho;
+    }
 
     //Classe auxiliar para o desafio 4.
 class Alertas{
@@ -340,8 +340,23 @@ static class Logs{
     }
 }
 
+  //classe auxiliar desafio 5.
+    private static class LogEntry {
+        private final long timestamp;
+        private final String sessionId;
+        private final String targetResource;
 
+        public LogEntry(String csvLine) {
+            String[] parts = csvLine.split(",");
+            this.timestamp = Long.parseLong(parts[0].trim());
+            this.sessionId = parts[2].trim();
+            this.targetResource = parts[4].trim(); // TARGET_RESOURCE é a 5ª coluna (índice 4)
+        }
 
+        public long getTimestamp() { return timestamp; }
+        public String getSessionId() { return sessionId; }
+        public String getTargetResource() { return targetResource; }
+    }
 
 
 
