@@ -125,11 +125,15 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
                 try {
                     // Campos relevantes: TIMESTAMP(0), ACTION_TYPE(3), SEVERITY_LEVEL(5)
                     long TIMESTAMP = Long.parseLong(dados[0].trim());
+                    String userId= dados[1].trim();
+                    String sessionId=dados[2].trim();
                     String acao = dados[3].trim();
+                    String  actionType=dados[4].trim();
                     int severidade = Integer.parseInt(dados[5].trim());
+                    Long transferencia=Long.parseLong(dados[6].trim());
 
 
-                    Alerta novoAlerta = new Alerta(TIMESTAMP, acao, severidade);
+                    Alerta novoAlerta = new Alerta(TIMESTAMP,userId, sessionId,acao,actionType, severidade,transferencia);
                     alertasSeveridade.offer(novoAlerta);
 
                 } catch (NumberFormatException ignored) {
@@ -206,14 +210,14 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
         Map<String, List<LogEntry>> sessoes = new HashMap<>();
 
         try (BufferedReader br = new BufferedReader(new FileReader(caminhoArquivoCsv))) {
-            br.readLine(); // Pula o cabeçalho
+            br.readLine();
             String linha;
             while ((linha = br.readLine()) != null) {
                 try {
                     LogEntry log = new LogEntry(linha);
                     sessoes.computeIfAbsent(log.getSessionId(), k -> new ArrayList<>()).add(log);
                 } catch (Exception ignored) {
-                    // Ignora linhas mal formatadas
+
                 }
             }
         }
@@ -312,13 +316,6 @@ static class Logs{
             this.acao=acao;
         }
 
-    public String getSessionId() {
-        return sessionId;
-    }
-
-    public String getAcao() {
-        return acao;
-    }
 }
 
  static class session{
