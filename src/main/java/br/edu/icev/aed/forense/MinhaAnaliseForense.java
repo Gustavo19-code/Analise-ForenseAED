@@ -164,10 +164,17 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
 
             while (leitor!=null){
                 String[]conjuntos= linha.split(";");
-                long timestamp=Long.parseLong(conjuntos[0]);
-                long transferidos= Long.parseLong(conjuntos[6]);
-                if(transferidos>0){
-                    Evento.add(new Alertas(timestamp,transferidos));
+                long TIMESTAMP = Long.parseLong(conjuntos[0].trim());
+                String userId= conjuntos[1].trim();
+                String sessionId=conjuntos[2].trim();
+                String acao = conjuntos[3].trim();
+                String  actionType=conjuntos[4].trim();
+                int severidade = Integer.parseInt(conjuntos[5].trim());
+                long transferencia=Long.parseLong(conjuntos[6].trim());
+
+                if(transferencia>0){
+
+                    Evento.add(new Alertas(TIMESTAMP,userId,sessionId,acao,actionType,severidade,transferencia));
                 }
 
             }
@@ -266,7 +273,7 @@ public class MinhaAnaliseForense implements AnaliseForenseAvancada {
                 for (String vizinho : grafo.get(atual)) {
                     if (!visitados.contains(vizinho)) {
                         visitados.add(vizinho);
-                        predecessores.put(vizinho, atual); // Mapeia de onde viemos [cite: 251]
+                        predecessores.put(vizinho, atual);
                         fila.add(vizinho);
                     }
                 }
@@ -299,7 +306,7 @@ class Alertas{
     long transferidos;
 
 
-    public Alertas(long T, long t){
+    public Alertas(long T, String userId, String sessionId, String acao, String actionType, long t, Long transferencia){
         this.timestamp=T;
         this.transferidos=t;
     }
